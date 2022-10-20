@@ -1,1 +1,1 @@
-# ImprovingSignRecognitionWithPhonology
+# Improving Sign Recognition With Phonology
