@@ -8,4 +8,4 @@ The project extends the OpenHands project in the following ways:
 3. Adds enhanced performance evaluation metrics to the InferenceModel
 
 For instructions on how to utilize OpenHands, please see the [original repository](https://github.com/AI4Bharat/OpenHands).
-An example config file is provided in the root directory ("example.config").
+An example config file is provided in the root directory ([https://github.com/leekezar/ImprovingSignRecognitionWithPhonology/blob/main/gcn_top2_all_train.yaml](gcn_top2_all_train.config), [https://github.com/leekezar/ImprovingSignRecognitionWithPhonology/blob/main/bert_top2_all_train.yaml](bert_top2_all_train.config)).
