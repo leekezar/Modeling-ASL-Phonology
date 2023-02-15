@@ -1,6 +1,6 @@
 # Improving Sign Recognition With Phonology
 
-This repository contains the necessary code to replicate the findings of "Improving Sign Recognition with Phonology".
+This repository contains the necessary code to replicate the findings of [Improving Sign Recognition with Phonology](https://arxiv.org/abs/2302.05759).
 
 The project extends the [OpenHands project](https://openhands.ai4bharat.org/en/latest/) in the following ways:
 1. Adds phoneme types to the [WLASL dataset class](https://github.com/leekezar/ImprovingSignRecognitionWithPhonology/blob/4307ee692350b4c9c2baa0fc96b5644051a4cbea/openhands/datasets/isolated/wlasl.py#L28)
