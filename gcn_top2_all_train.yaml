@@ -4,7 +4,7 @@ data:
     train_pipeline:
         dataset:
             _target_: openhands.datasets.isolated.WLASLDataset
-            split_file: /path/to/metadata.json
+            split_file: /training_data/wlasl_new.json
             root_dir: /path/to/poses/
             splits: "train"
             modality: "pose"
@@ -12,9 +12,6 @@ data:
         transforms:
             - PoseSelect:
                 preset: mediapipe_holistic_minimal_27
-            # - PoseTemporalSubsample:
-            #       num_frames: 32
-            # - RandomMove:
             - CenterAndScaleNormalize:
                 reference_points_preset: shoulder_mediapipe_holistic_minimal_27
                 scale_factor: 1
@@ -22,8 +19,6 @@ data:
                 shear_std: 0.1
             - RotatationTransform:
                 rotation_std: 0.1
-            # - ScaleTransform:
-            #     scale_std: 0.2
 
         dataloader:
             _target_: torch.utils.data.DataLoader
@@ -37,7 +32,7 @@ data:
     valid_pipeline:
         dataset:
             _target_: openhands.datasets.isolated.WLASLDataset
-            split_file: /path/to/metadata.json
+            split_file: /training_data/wlasl_new.json
             root_dir: /path/to/poses/
             splits: "test"
             modality: "pose"
@@ -45,8 +40,6 @@ data:
         transforms:
             - PoseSelect:
                 preset: mediapipe_holistic_minimal_27
-            # - PoseTemporalSubsample:
-            #       num_frames: 32
             - CenterAndScaleNormalize:
                 reference_points_preset: shoulder_mediapipe_holistic_minimal_27
                 scale_factor: 1
@@ -58,33 +51,6 @@ data:
             num_workers: 3
             pin_memory: true
             drop_last: false
-
-    test_pipeline:
-            dataset:
-                _target_: openhands.datasets.isolated.WLASLDataset
-                split_file: /path/to/metadata.json
-                root_dir: /path/to/poses/
-                splits: "test"
-                modality: "pose"
-                inference_mode: false
-                results: /path/to/output.json
-
-            transforms:
-                - PoseSelect:
-                    preset: mediapipe_holistic_minimal_27
-                # - PoseTemporalSubsample:
-                #       num_frames: 32
-                - CenterAndScaleNormalize:
-                    reference_points_preset: shoulder_mediapipe_holistic_minimal_27
-                    scale_factor: 1
-
-            dataloader:
-                _target_: torch.utils.data.DataLoader
-                batch_size: 32
-                shuffle: false
-                num_workers: 3
-                pin_memory: true
-                drop_last: false
 
 model:
     encoder:
@@ -177,7 +143,7 @@ exp_manager:
         monitor: "val_acc"
         mode: "max"
         save_top_k: 1
-        dirpath: "/path/to/model_output_folder/"
+        dirpath: "/pretrained_models/"
 
     early_stopping_callback: true
     early_stopping_params:
