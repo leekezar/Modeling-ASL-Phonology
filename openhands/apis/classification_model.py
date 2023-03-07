@@ -31,11 +31,11 @@ class ClassificationModel(InferenceModel):
         params = self.cfg.data.train_pipeline.parameters
         y_hat, y_hat_params = self.model(batch["frames"])
 
-        loss = sum([self.loss(y_hat_params[p], batch["params"][p]) for p in params]) + \
+        loss = sum([self.loss(y_hat_params[p], batch["params"][p]) for p in params])
             # self.loss(y_hat, batch["labels"])
             
 
-        acc = sum([self.accuracy_metric(F.softmax(y_hat_params[p], dim=-1), batch["params"][p]) for p in params]) + \
+        acc = sum([self.accuracy_metric(F.softmax(y_hat_params[p], dim=-1), batch["params"][p]) for p in params])
             # self.accuracy_metric(F.softmax(y_hat, dim=-1), batch["labels"])
             
 
@@ -52,7 +52,7 @@ class ClassificationModel(InferenceModel):
         params = self.cfg.data.valid_pipeline.parameters
         y_hat, y_hat_params = self.model(batch["frames"])
 
-        loss = sum([self.loss(y_hat_params[p], batch["params"][p]) for p in params]) + \
+        loss = sum([self.loss(y_hat_params[p], batch["params"][p]) for p in params])
             # self.loss(y_hat, batch["labels"])
 
         preds = F.softmax(y_hat, dim=-1)
