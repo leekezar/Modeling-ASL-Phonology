@@ -172,6 +172,11 @@ class DecoupledGCNUnit(nn.Module):
         )
         nn.init.constant_(self.linear_bias, 1e-6)
 
+    def freeze_nonadapter_params(self):
+        for param in self.parameters():
+            import pdb; pdb.set_trace()
+
+
     def norm(self, A):
         b, c, h, w = A.size()
         A = A.view(c, self.num_points, self.num_points)
@@ -230,6 +235,8 @@ class DecoupledGCN_TCN_unit(nn.Module):
         groups,
         num_points,
         block_size,
+        adapters, 
+        learn_adapter, 
         drop_size,
         stride=1,
         residual=True,
@@ -297,6 +304,15 @@ class DecoupledGCN_TCN_unit(nn.Module):
             nn.init.constant_(self.fc2c.weight, 0)
             nn.init.constant_(self.fc2c.bias, 0)
 
+        self.learn_adapter = learn_adapter
+        if self.learn_adapter:
+            self.adapter_module = nn.Sequential(
+                    nn.Linear(out_channels, int(out_channels/16)),
+                    nn.Sigmoid(),
+                    nn.Linear(int(out_channels/16), out_channels)
+                )
+
+
     def forward(self, x, keep_prob):
         y = self.gcn1(x)
         if self.use_attention:
@@ -317,6 +333,16 @@ class DecoupledGCN_TCN_unit(nn.Module):
             y = y * se2.unsqueeze(-1).unsqueeze(-1) + y
 
         y = self.tcn1(y, keep_prob, self.A)
+
+        if self.learn_adapter:
+            # se = signal embedding?
+            # average over batch, time, and keypoints
+            se = torch.permute(y, (0, 2, 3, 1))
+            se = self.adapter_module(se)
+            # se = se + y
+            y = y + torch.permute(se, (0, 3, 1, 2))
+            #y = y * se.unsqueeze(-2).unsqueeze(-1).unsqueeze(-1) + y
+
         x_skip = self.residual(x)
         x_skip = self.drop_spatial(x_skip, keep_prob, self.A)
         x_skip = self.drop_temporal(x_skip, keep_prob)
@@ -340,6 +366,8 @@ class DecoupledGCN(nn.Module):
     def __init__(
         self,
         in_channels,
+        adapters,
+        learn_adapter,
         graph_args,
         groups=8,
         block_size=41,
@@ -348,9 +376,11 @@ class DecoupledGCN(nn.Module):
         
         super(DecoupledGCN, self).__init__()
         graph_args = OmegaConf.to_container(graph_args)
+
+        # check what graph_args contains
         num_points = graph_args["num_nodes"]
         inward_edges = graph_args["inward_edges"]
-        
+
         self.graph = SpatialGraph(num_points, inward_edges)
         A = self.graph.A
         self.data_bn = nn.BatchNorm1d(in_channels * num_points)
@@ -363,32 +393,35 @@ class DecoupledGCN(nn.Module):
             groups,
             num_points,
             block_size,
+            adapters,
+            False,
             drop_size=drop_size,
             residual=False,
+
         )
         self.l2 = DecoupledGCN_TCN_unit(
-            64, 64, A, groups, num_points, block_size, drop_size=drop_size
+            64, 64, A, groups, num_points, block_size, adapters, False, drop_size=drop_size
         )
         self.l3 = DecoupledGCN_TCN_unit(
-            64, 64, A, groups, num_points, block_size, drop_size=drop_size
+            64, 64, A, groups, num_points, block_size, adapters, False, drop_size=drop_size
         )
         self.l4 = DecoupledGCN_TCN_unit(
-            64, 64, A, groups, num_points, block_size, drop_size=drop_size
+            64, 64, A, groups, num_points, block_size, adapters, False, drop_size=drop_size
         )
         self.l5 = DecoupledGCN_TCN_unit(
-            64, 128, A, groups, num_points, block_size, drop_size=drop_size, stride=2
+            64, 128, A, groups, num_points, block_size, adapters, False, drop_size=drop_size, stride=2
         )
         self.l6 = DecoupledGCN_TCN_unit(
-            128, 128, A, groups, num_points, block_size, drop_size=drop_size
+            128, 128, A, groups, num_points, block_size, adapters, learn_adapter, drop_size=drop_size
         )
         self.l7 = DecoupledGCN_TCN_unit(
-            128, 128, A, groups, num_points, block_size, drop_size=drop_size
+            128, 128, A, groups, num_points, block_size, adapters, learn_adapter, drop_size=drop_size
         )
         self.l8 = DecoupledGCN_TCN_unit(
-            128, 256, A, groups, num_points, block_size, drop_size=drop_size, stride=2
+            128, 256, A, groups, num_points, block_size, adapters, learn_adapter, drop_size=drop_size, stride=2
         )
         self.l9 = DecoupledGCN_TCN_unit(
-            256, 256, A, groups, num_points, block_size, drop_size=drop_size
+            256, 256, A, groups, num_points, block_size, adapters, learn_adapter, drop_size=drop_size
         )
         self.n_out_features = n_out_features
         self.l10 = DecoupledGCN_TCN_unit(
@@ -398,6 +431,8 @@ class DecoupledGCN(nn.Module):
             groups,
             num_points,
             block_size,
+            adapters, 
+            learn_adapter, 
             drop_size=drop_size,
         )
 

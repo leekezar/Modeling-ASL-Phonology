@@ -25,12 +25,13 @@ class WLASLDataset(BaseIsolatedDataset):
             self.content = json.load(f)
         self.glosses = sorted([gloss_entry["gloss"] for gloss_entry in self.content])
 
-    def read_params(self):
+    def read_params(self, ):
         with open(self.split_file, "r") as f:
             self.content = json.load(f)
 
         self.params = {
-            param : sorted(set([str(instance[param]) for gloss_entry in self.content for instance in gloss_entry["instances"]]))
+            param : sorted(set([str(instance[param]) \
+                for gloss_entry in self.content for instance in gloss_entry["instances"]]))
             for param in PARAMS
         }
 

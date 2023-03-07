@@ -166,6 +166,7 @@ class DataModule(pl.LightningDataModule):
 
     def _instantiate_dataset(self, pipeline_cfg):
         transforms_cfg = pipeline_cfg.transforms
+        params = pipeline_cfg.parameters
         if transforms_cfg:
             if self.data_cfg.modality == "video":
                 transforms = self.create_video_transforms(transforms_cfg)
@@ -180,5 +181,5 @@ class DataModule(pl.LightningDataModule):
         if dataset_cfg is None:
             raise ValueError(f"`dataset` section missing in pipeline")
 
-        dataset = hydra.utils.instantiate(dataset_cfg, transforms=transforms)
+        dataset = hydra.utils.instantiate(dataset_cfg, transforms=transforms, selected_ptypes=params)
         return dataset

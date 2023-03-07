@@ -28,9 +28,8 @@ class ClassificationModel(InferenceModel):
         Lightning calls this inside the training loop with the data from the training dataloader
         passed in as `batch` and calculates the loss and the accuracy.
         """
-
-        params = self.cfg.model.decoder.parameters
-        y_hat, y_hat_params = self.model(batch)
+        params = self.cfg.data.train_pipeline.parameters
+        y_hat, y_hat_params = self.model(batch["frames"])
 
         loss = self.loss(y_hat, batch["labels"]) + \
             sum([self.loss(y_hat_params[p], batch["params"][p]) for p in params])
@@ -48,8 +47,8 @@ class ClassificationModel(InferenceModel):
         Lightning calls this inside the training loop with the data from the validation dataloader
         passed in as `batch` and calculates the loss and the accuracy.
         """
-        params = self.cfg.model.decoder.parameters
-        y_hat, y_hat_params = self.model(batch)
+        params = self.cfg.data.valid_pipeline.parameters
+        y_hat, y_hat_params = self.model(batch["frames"])
 
         loss = self.loss(y_hat, batch["labels"]) + \
             sum([self.loss(y_hat_params[p], batch["params"][p]) for p in params])
@@ -84,7 +83,7 @@ class ClassificationModel(InferenceModel):
         loss = conf.loss
         assert loss in ["CrossEntropyLoss", "SmoothedCrossEntropyLoss"]
         if loss == "CrossEntropyLoss":
-            return CrossEntropyLoss(ignore_index=0)
+            return CrossEntropyLoss(ignore_index=-1)
         return SmoothedCrossEntropyLoss()
 
     def setup_metrics(self):

@@ -8,7 +8,7 @@ class FC(nn.Module):
     Args:
         n_features (int): Number of features in the input.
         num_class (int): Number of class for classification.
-        dropout_ratio (float): Dropout ratio to use. Default: 0.2.
+        dropout_ratio (float): Dropout ratio to use Default: 0.2.
         batch_norm (bool): Whether to use batch norm or not. Default: ``False``.
     """
     def __init__(self, n_features, num_class, dropout_ratio=0.2, batch_norm=False):

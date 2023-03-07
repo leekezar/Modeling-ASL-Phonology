@@ -9,13 +9,20 @@ from ..models.loader import get_model
 from sklearn.metrics import confusion_matrix
 import numpy as np
 
+PARAMS = [
+    "Handshape","Selected Fingers", "Flexion", "Spread", "Spread Change",
+    "Thumb Position", "Thumb Contact", "Sign Type", "Path Movement",
+    "Repeated Movement", "Major Location", "Minor Location",
+    "Second Minor Location", "Contact", "Nondominant Handshape", 
+    "Wrist Twist", "Handshape Morpheme 2"
+]
+
 # merge with the corresponding modules in the future release.
 class InferenceModel(pl.LightningModule):
     """
     This will be the general interface for running the inference across models.
     Args:
         cfg (dict): configuration set.
-
     """
     def __init__(self, cfg, stage="test"):
         super().__init__()
@@ -32,11 +39,11 @@ class InferenceModel(pl.LightningModule):
         """
         Creates and returns the model object based on the config.
         """
-        params = { p : self.datamodule.num_param[p] for p in cfg.decoder.parameters }
+        params = { p : self.datamodule.num_param[p] for p in PARAMS }
 
         return get_model(cfg, self.datamodule.in_channels, 
             self.datamodule.num_class, params)
-    
+
     def forward(self, x):
         """
         Forward propagates the inputs and returns the model output.

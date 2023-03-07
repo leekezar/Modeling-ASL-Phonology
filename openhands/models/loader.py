@@ -68,7 +68,7 @@ def load_decoder(decoder_cfg, num_class, encoder, params = None):
         )
 
     if decoder_cfg.type == "param_fc":
-        from .decoder.fc import ParamFC
+        from .decoder.fc import NParamFC
 
         return NParamFC(
             n_features=n_out_features, num_class=num_class, params=params, 
@@ -124,5 +124,5 @@ def get_model(config, in_channels, num_class, params = None):
         from .network import Network
         return Network(encoder, decoder)
     else:
-        from .network import BiNetwork
+        from .network import NNetwork
         return NNetwork(encoder, decoder)

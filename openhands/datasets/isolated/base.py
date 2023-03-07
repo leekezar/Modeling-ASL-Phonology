@@ -39,6 +39,7 @@ class BaseIsolatedDataset(torch.utils.data.Dataset):
         splits=["train"],
         modality="rgb",
         transforms="default",
+        selected_ptypes=[],
         cv_resize_dims=(264, 264),
         pose_use_confidence_scores=False,
         pose_use_z_axis=False,
@@ -88,12 +89,25 @@ class BaseIsolatedDataset(torch.utils.data.Dataset):
 
         self.params = {}
         self.read_params()
-        if self.params:
-            for p, vals in self.params.items():
-                print(f"Found {len(vals)} {p}s in {splits} splits")
+        # if self.params:
+        #     for p, vals in self.params.items():
+        #         print(f"Found {len(vals)} {p}s in {splits} splits")
 
-        self.param_to_id = {param: { val : i for i, val in enumerate(vals) } for param, vals in self.params.items() }
-        self.id_to_param = {param: { i : val for i, val in enumerate(vals) } for param, vals in self.params.items() }
+        # conversion of human-readable label to number
+        # (-1 for phoneme types not meant to be classified)
+        self.param_to_id = {
+            param: { 
+                val : (i if param in selected_ptypes else -1) \
+            for i, val in enumerate(vals) } for param, vals in self.params.items() }
+
+        # just flipped version of param_to_id
+        # note that ignored phoneme types are present but not complete
+        # all their values (e.g. "ily", "flat-o") are collapsed into one with key -1 
+        self.id_to_param = {
+            param: { 
+                i : val for i, val in enumerate(self.param_to_id[param]) }
+            for param in self.params.keys() 
+        }
         
         self.inference_mode = inference_mode
         self.only_metadata = only_metadata
@@ -129,17 +143,13 @@ class BaseIsolatedDataset(torch.utils.data.Dataset):
 
             self.__getitem = self.__getitem_pose
 
-        elif modality == "mixed":
-            self.in_channels = 7
-            self.__getitem = self.__getitem_mixed
-
         else:
             exit(f"ERROR: Modality `{modality}` not supported")
 
         self.setup_transforms(modality, transforms)
 
     def setup_transforms(self, modality, transforms):
-        if "rgb" in modality or "mixed" in modality:
+        if "rgb" in modality:
             if transforms == "default":
                 albumentation_transforms = A.Compose(
                     [
@@ -214,7 +224,7 @@ class BaseIsolatedDataset(torch.utils.data.Dataset):
         """
         files = list_all_videos(dir)
 
-        if self.modality == "pose" or self.modality == "mixed":
+        if self.modality == "pose":
             holistic = None
             pose_files = []
 
@@ -295,13 +305,6 @@ class BaseIsolatedDataset(torch.utils.data.Dataset):
         # print(f"\tVideo: {video_id}, gloss: {label}")
         return data
 
-    def __getitem_mixed(self, index):
-        # print(f"Getting {index}th item (mixed)")
-        vid = self.__getitem_video(index)
-        if vid:
-            vid["poses"] = self.__getitem_pose(index)["frames"]
-        return vid
-
 
     @staticmethod
     def collate_fn(batch_list):
@@ -318,7 +321,7 @@ class BaseIsolatedDataset(torch.utils.data.Dataset):
         # print(batch_list[0][1])
 
         # import pdb; pdb.set_trace()
-        max_frames = max([x["frames"].shape[1] for x in batch_list if x])
+        max_frames = max([x["frames"].shape[1] for x in batch_list])
         # Pad the temporal dimension to `max_frames` for all videos
         # Assumes each instance of shape: (C, T, V) 
         # TODO: Handle videos (C,T,H,W)
@@ -327,22 +330,23 @@ class BaseIsolatedDataset(torch.utils.data.Dataset):
             for i, x in enumerate(batch_list) if x
         ]
         frames = torch.stack(frames, dim=0)
+        # print(frames.size())
 
-        poses = [
-            F.pad(x["poses"], (0, 0, 0, max_frames - x["poses"].shape[1], 0, 0))
-            for i,x in enumerate(batch_list) if x
-        ]
-        poses = torch.stack(poses, dim=0)
+        # poses = [
+        #     F.pad(x["poses"], (0, 0, 0, max_frames - x["poses"].shape[1], 0, 0))
+        #     for i,x in enumerate(batch_list) if x
+        # ]
+        # poses = torch.stack(poses, dim=0)
 
-        labels = [x["label"] for i, x in enumerate(batch_list) if x]
+        labels = [x["label"] for i, x in enumerate(batch_list)]
         labels = torch.stack(labels, dim=0)
         # print(labels)
         if 'Handshape' in batch_list[0].keys():
-            params = { p : torch.stack([x[p] for x in batch_list if x], dim=0) for p in PARAMS }
+            params = { p : torch.stack([x[p] for x in batch_list], dim=0) for p in PARAMS }
         else:
             params = {}
 
-        return dict(frames=frames, poses=poses, labels=labels, params=params, files=[x["file"] for x in batch_list if x], dataset_names=[x["dataset_name"] for x in batch_list if x])
+        return dict(frames=frames, labels=labels, params=params, files=[x["file"] for x in batch_list if x], dataset_names=[x["dataset_name"] for x in batch_list if x])
 
     def read_pose_data(self, index):
         label = self.data[index][1]
@@ -411,8 +415,8 @@ class BaseIsolatedDataset(torch.utils.data.Dataset):
         data = formatted_data
 
         # temporarily remove this bc transforms is currently defined to be for videos
-        # if self.transforms is not None:
-        #     data = self.transforms(data)
+        if self.transforms is not None:
+            data = self.transforms(data)
         
         if self.seq_len > 1 and self.num_seq > 1:
             data["num_windows"] = self.num_seq
