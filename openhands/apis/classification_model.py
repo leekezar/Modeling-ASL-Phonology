@@ -40,7 +40,7 @@ class ClassificationModel(InferenceModel):
             
 
         self.log("train_loss", loss)
-        self.log("train_acc", acc, on_step=True, on_epoch=False, prog_bar=True)
+        self.log("train_acc", acc / len(params), on_step=True, on_epoch=False, prog_bar=True)
 
         return {"loss": loss, "train_acc": acc}
 
