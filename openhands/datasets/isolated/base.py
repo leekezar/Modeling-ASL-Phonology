@@ -100,6 +100,8 @@ class BaseIsolatedDataset(torch.utils.data.Dataset):
                 val : (i if param in selected_ptypes else -1) \
             for i, val in enumerate(vals) } for param, vals in self.params.items() }
 
+        print(f"[Adapters] Creating a model with {len(selected_ptypes)} clf heads: {', '.join(selected_ptypes)}.")
+
         # just flipped version of param_to_id
         # note that ignored phoneme types are present but not complete
         # all their values (e.g. "ily", "flat-o") are collapsed into one with key -1 
