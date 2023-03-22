@@ -78,9 +78,6 @@ def configure_checkpointing(trainer, cfg, learn_adapter = False, n_adapter_sourc
     checkpoint_callback = ModelCheckpoint(**cfg)#, dirpath=trainer._default_root_dir)
 
     if learn_adapter:
-        if n_adapter_sources > 1:
-            checkpoint_callback.FILE_EXTENSION = ".tchr"
-        else:
             checkpoint_callback.FILE_EXTENSION = ".adpt"
 
 
