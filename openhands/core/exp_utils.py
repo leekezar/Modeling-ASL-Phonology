@@ -7,10 +7,10 @@ from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 def get_trainer(cfg):
     trainer = pl.Trainer(**cfg.trainer)
-    experiment_manager(trainer, cfg.get("exp_manager", None))
+    experiment_manager(trainer, cfg.get("exp_manager", None), cfg.model.learn_adapter, cfg.model.adapter_source)
     return trainer
 
-def experiment_manager(trainer, cfg=None):
+def experiment_manager(trainer, cfg=None, learn_adapter=False, sources=[]):
     """
     Helper to manage the folders and callbacks for the experiments.
     """
@@ -27,7 +27,7 @@ def experiment_manager(trainer, cfg=None):
             cfg.wandb_logger_kwargs,
         )
     if cfg.create_checkpoint_callback:
-        configure_checkpointing(trainer, cfg.checkpoint_callback_params)
+        configure_checkpointing(trainer, cfg.checkpoint_callback_params, learn_adapter, len(sources))
 
     if "early_stopping_callback" in cfg.keys() and cfg.early_stopping_callback:
         configure_early_stopping(trainer, cfg.early_stopping_params)
@@ -67,7 +67,7 @@ def configure_loggers(
     trainer.logger_connector.configure_logger(logger_list)
 
 
-def configure_checkpointing(trainer, cfg):
+def configure_checkpointing(trainer, cfg, learn_adapter = False, n_adapter_sources = 0):
     """
     Creates ModelCheckpoint callback and and attach it to the trainer.
     """
@@ -76,6 +76,11 @@ def configure_checkpointing(trainer, cfg):
     trainer.callbacks = [callback for callback in trainer.callbacks if type(callback) is not ModelCheckpoint]
     
     checkpoint_callback = ModelCheckpoint(**cfg)#, dirpath=trainer._default_root_dir)
+
+    if learn_adapter:
+            checkpoint_callback.FILE_EXTENSION = ".adpt"
+
+
     trainer.callbacks.append(checkpoint_callback)
 
 

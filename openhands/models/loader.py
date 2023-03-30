@@ -2,7 +2,7 @@ import omegaconf
 import torch.nn as nn
 
 
-def load_encoder(encoder_cfg, in_channels):
+def load_encoder(encoder_cfg, in_channels, learn_adapter, adapter_source):
     if encoder_cfg.type == "cnn3d":
         from .encoder.cnn3d import CNN3D
 
@@ -28,11 +28,13 @@ def load_encoder(encoder_cfg, in_channels):
     elif encoder_cfg.type == "decoupled-gcn":
         from .encoder.graph.decoupled_gcn import DecoupledGCN
 
-        return DecoupledGCN(in_channels=in_channels, **encoder_cfg.params)
+        return DecoupledGCN(in_channels=in_channels, learn_adapter=learn_adapter, adapters=adapter_source, **encoder_cfg.params)
     elif encoder_cfg.type == "st-gcn":
         from .encoder.graph.st_gcn import STGCN
 
         return STGCN(in_channels=in_channels, **encoder_cfg.params)
+
+
     elif encoder_cfg.type == "sgn":
         from .encoder.graph.sgn import SGN
 
@@ -117,7 +119,7 @@ def get_model(config, in_channels, num_class, params = None):
         # Load self-supervised backbone
         return load_ssl_backbone(config.pretrained, in_channels, num_class)
 
-    encoder = load_encoder(config.encoder, in_channels)
+    encoder = load_encoder(config.encoder, in_channels, config.learn_adapter, config.adapter_source)
     decoder = load_decoder(config.decoder, num_class, encoder, params)
 
     if not params:

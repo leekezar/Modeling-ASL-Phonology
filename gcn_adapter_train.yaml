@@ -1,11 +1,11 @@
+pretrained: "./pretrained_models/adapter_base.ckpt"
 data:
     modality: "pose"
-    
     train_pipeline:
         dataset:
             _target_: openhands.datasets.isolated.WLASLDataset
-            split_file: /training_data/wlasl_new.json
-            root_dir: /path/to/poses/
+            split_file: /misery/lee/asllex_large.json
+            root_dir: /misery/lee/asllex_large/poses
             splits: "train"
             modality: "pose"
 
@@ -28,11 +28,34 @@ data:
             pin_memory: true
             drop_last: true
     
+        parameters: 
+            [
+                "Handshape",
+                # "Selected Fingers",
+                # "Flexion",
+                # "Spread",
+                # "Spread Change",
+                # "Thumb Position",
+                # "Thumb Contact",
+                # "Sign Type",
+                # "Path Movement",
+                # "Repeated Movement",
+                # "Major Location",
+                # "Minor Location",
+                # "Second Minor Location",
+                # "Contact",
+                # "Nondominant Handshape", 
+                # "Wrist Twist",
+                # "Handshape Morpheme 2"
+            ]
+
+
+
     valid_pipeline:
         dataset:
             _target_: openhands.datasets.isolated.WLASLDataset
-            split_file: /training_data/wlasl_new.json
-            root_dir: /path/to/poses/
+            split_file: /misery/lee/asllex_large.json
+            root_dir: /misery/lee/asllex_large/poses
             splits: "test"
             modality: "pose"
 
@@ -46,19 +69,39 @@ data:
         dataloader:
             _target_: torch.utils.data.DataLoader
             batch_size: 32
-            shuffle: true
+            shuffle: false
             num_workers: 3
             pin_memory: true
             drop_last: false
 
+        parameters: 
+            [
+                # "Handshape",
+                # "Selected Fingers",
+                # "Flexion",
+                # "Spread",
+                # "Spread Change",
+                # "Thumb Position",
+                # "Thumb Contact",
+                # "Sign Type",
+                # "Path Movement",
+                # "Repeated Movement",
+                # "Major Location",
+                "Minor Location",
+                # "Second Minor Location",
+                # "Contact",
+                # "Nondominant Handshape", 
+                # "Wrist Twist",
+                # "Handshape Morpheme 2"
+            ]
+
+
 model:
+    learn_adapter: true
+    adapter_source: ["", "./pretrained_models/selectedfingers.adpt", "./pretrained_models/flexion.adpt"]
     encoder:
         type: decoupled-gcn
         params:
-            # pretrained adapters to fuse (only makes sense when learn_adapter is true)
-            adapters: []
-            # learns an adapter for the selected CLF heads. if there isn't a `pretrained` option on line 1, it'll learn all params (model+adpter)
-            learn_adapter: true
             graph_args:
                 num_nodes: 27
                 inward_edges:
@@ -94,27 +137,6 @@ model:
         type: param_fc
         params:
             dropout_ratio: 0
-        parameters: 
-            [
-                "Handshape",
-                # "Selected Fingers",
-                # "Flexion",
-                # "Spread",
-                # "Spread Change",
-                # "Thumb Position",
-                # "Thumb Contact",
-                # "Sign Type",
-                # "Path Movement",
-                # "Repeated Movement",
-                # "Major Location",
-                "Minor Location",
-                # "Second Minor Location",
-                # "Contact",
-                # "Nondominant Handshape", 
-                # "Wrist Twist",
-                # "Handshape Morpheme 2"
-            ]
-
 
 optim:
     loss: 'CrossEntropyLoss'
@@ -131,22 +153,22 @@ optim:
 
 trainer:
     gpus: 1
-    max_epochs: 150
-    # resume_from_checkpoint: /path/to/model.ckpt
+    max_epochs: 100
+    resume_from_checkpoint: false #./pretrained_models/mjr_sample.ckpt
 
 exp_manager:
     create_tensorboard_logger: true
     create_wandb_logger: true
     wandb_logger_kwargs:
-        name: model_name_here
-        project: project_name_here
+        name: fusion_test
+        project: openhands
 
     create_checkpoint_callback: true
     checkpoint_callback_params:
         monitor: "val_acc"
         mode: "max"
         save_top_k: 1
-        dirpath: "/pretrained_models/"
+        dirpath: "./pretrained_models/"
 
     early_stopping_callback: true
     early_stopping_params:

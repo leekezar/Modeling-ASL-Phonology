@@ -31,6 +31,12 @@ class InferenceModel(pl.LightningModule):
         self.datamodule.setup(stage=stage)
 
         self.model = self.create_model(cfg.model)
+
+        # if we are learning an adapter, we might want to freeze the rest of the model (if it exists)
+        if cfg.model.learn_adapter:
+            if cfg.pretrained or cfg.trainer.resume_from_checkpoint:
+                self.freeze_model()
+
         self._device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         if stage == "test":
             self.model.to(self._device).eval()
@@ -40,9 +46,21 @@ class InferenceModel(pl.LightningModule):
         Creates and returns the model object based on the config.
         """
         params = { p : self.datamodule.num_param[p] for p in PARAMS }
-
         return get_model(cfg, self.datamodule.in_channels, 
             self.datamodule.num_class, params)
+
+    def freeze_model(self, include_adapters = False):
+        print("[Adapters] Freezing non-adapter parameters...")
+        encoder_layers = self._modules["model"].encoder._modules.items()
+        # decoder_layers = self._modules["model"].decoder._modules.items()
+
+        for name,layer in list(encoder_layers):#+list(decoder_layers):
+            for component_name,component in layer._modules.items():
+                if "adapter" in component_name and not include_adapters: continue
+
+                for param in component.parameters():
+                    param.requires_grad = False
+
 
     def forward(self, x):
         """
@@ -54,7 +72,7 @@ class InferenceModel(pl.LightningModule):
         """
         Intializes the pretrained weights if the ``cfg`` has ``pretrained`` parameter.
         """
-        if "pretrained" not in self.cfg.keys():
+        if "pretrained" not in self.cfg.keys() or self.cfg.pretrained == False:
             return
 
         ckpt_path = self.cfg["pretrained"]

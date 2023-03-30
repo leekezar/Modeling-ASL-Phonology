@@ -62,7 +62,8 @@ class NParamFC(nn.Module):
             x (torch.Tensor): Input tensor of shape: (batch_size, n_features)
         
         returns:
-            torch.Tensor: logits for classification.
+            torch.Tensor: logits for the gloss classification.
+            dict { param : torch.Tensor } phoneme type logits
         """
 
         x = self.dropout(x)
