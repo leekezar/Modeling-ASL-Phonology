@@ -53,11 +53,7 @@ class ClassificationModel(InferenceModel):
         params = self.cfg.data.valid_pipeline.parameters
         y_hat, y_hat_params = self.model(batch["frames"])
 
-<<<<<<< HEAD
-        loss = sum([self.loss(y_hat_params[p], batch["params"][p]) for p in params])
-=======
         loss = sum([self.loss(y_hat_params[p], batch["params"][p]) for p in params])# + \
->>>>>>> e494ddd67c5ee22aab8fad9d3378f74fd9b0b6b0
             # self.loss(y_hat, batch["labels"])
 
         preds = F.softmax(y_hat, dim=-1)
