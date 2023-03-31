@@ -97,8 +97,10 @@ data:
 
 
 model:
-    learn_adapter: true
-    adapter_source: ["", "./pretrained_models/selectedfingers.adpt", "./pretrained_models/flexion.adpt"]
+    learn_adapter: True
+    adapter_strategy: "vanilla"
+    adapters_dir: "/home/lee/wlasl/slgcn_adapters/pretrained_models/vanilla_adapters/"
+    #adapter_source: ["/home/lee/wlasl/slgcn_adapters/pretrained_models/vanilla_adapters/selectedfingers.adpt", "/home/lee/wlasl/slgcn_adapters/pretrained_models/vanilla_adapters/flexion.adpt"]
     encoder:
         type: decoupled-gcn
         params:
@@ -158,10 +160,12 @@ trainer:
 
 exp_manager:
     create_tensorboard_logger: true
-    create_wandb_logger: true
+    create_wandb_logger: false
     wandb_logger_kwargs:
-        name: fusion_test
+        name: gcn_individual_fusion
         project: openhands
+        entity: asl-adapters
+        api_key: 
 
     create_checkpoint_callback: true
     checkpoint_callback_params:
