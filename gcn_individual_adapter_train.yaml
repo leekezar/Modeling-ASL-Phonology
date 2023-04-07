@@ -99,7 +99,8 @@ data:
 model:
     learn_adapter: True
     adapter_strategy: "vanilla"
-    adapters_dir: "/home/lee/wlasl/slgcn_adapters/pretrained_models/vanilla_adapters/"
+    #adapters_dir: "/home/lee/wlasl/slgcn_adapters/pretrained_models/vanilla_adapters/"
+    adapters_dir: "/data/experiments/ASL-Tejas/vanilla_adapters/"
     #adapter_source: ["/home/lee/wlasl/slgcn_adapters/pretrained_models/vanilla_adapters/selectedfingers.adpt", "/home/lee/wlasl/slgcn_adapters/pretrained_models/vanilla_adapters/flexion.adpt"]
     encoder:
         type: decoupled-gcn
@@ -159,13 +160,13 @@ trainer:
     resume_from_checkpoint: false #./pretrained_models/mjr_sample.ckpt
 
 exp_manager:
-    create_tensorboard_logger: true
-    create_wandb_logger: false
+    create_tensorboard_logger: false
+    create_wandb_logger: true
+    wandb_api_key: c3346316614a2387db57382fe38090bd4c011d30
     wandb_logger_kwargs:
         name: gcn_individual_adapter
         project: openhands
         entity: asl-adapters
-        api_key: 
 
     create_checkpoint_callback: true
     checkpoint_callback_params:

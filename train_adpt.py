@@ -26,12 +26,37 @@ PTYPE_SHORTHAND_TO_FULL = {
     "wt": "Wrist Twist",
 }
 
-def learn_model(cfg):
+def learn_model(cfg, args):
     os.environ["WANDB_API_KEY"] = cfg.exp_manager.wandb_api_key
     trainer = get_trainer(cfg)
     model = ClassificationModel(cfg=cfg, trainer=trainer)
     model.init_from_checkpoint_if_available()
+
+    # Create (and activate) Adapter modules, if any
+    if cfg.model.learn_adapter is True:
+        for t in args.targets:
+            model.model.encoder.add_adapter(t)
+        if args.learning_strategy == 'ind':
+            model.model.encoder.activate_adapter(args.targets[0])
+
+    # Train the model
     model.fit()
+
+    # Load best validation checkpoint
+    model.load_best_validation_checkpoint()
+
+    # Save adapter params
+    if args.learning_strategy == 'ind':
+        model.model.encoder.save_adapter_weights(args.targets[0], cfg.model.adapters_dir)
+
+    # Evaluate model on target ptype
+    #if args.learning_strategy == 'ind':
+    #    model.model.encoder.load_adapter_weights(args.targets[0], cfg.model.adapters_dir)
+    #    model.model.encoder.activate_adapter(args.targets[0])
+    #model.eval()
+    #model.compute_test_accuracy()
+
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Learn an SL-GCN model for ASL phonology')
@@ -52,11 +77,11 @@ def parse_args():
     parser.add_argument('--learn_adapter', '-a', action='store_true',
                 help='When provided, the provided pretrained model will be frozen and adapters will be learned for the targets instead. Requires that learning_strategy is ind.')
 
-    parser.add_argument('--adapter_strategy', type=str,
-                help='Specifies to learn an adapter for target ptype independently, or using fusion.')
+    #parser.add_argument('--adapter_strategy', type=str,
+    #            help='Specifies to learn an adapter for target ptype independently, or using fusion.')
 
-    parser.add_argument('--adapters_dir', type=str,
-                help='Specifies where adapter checkpoints are saved.')
+    #parser.add_argument('--adapters_dir', type=str,
+    #            help='Specifies where adapter checkpoints are saved.')
 
     parser.add_argument('--fuse', '-f', type=pathlib.Path, nargs='+', default=None, metavar='ADPT_FILE',
         help='The pretrained adapters (.adpt) to include. Can use wildcards such as "./adapters/*/*.adpt".')
@@ -109,8 +134,8 @@ if __name__ == '__main__':
     if args.learn_adapter:
         cfg.model.learn_adapter = True
         cfg.model.adapter_source = [] if args.fuse == None else list(glob.glob(args.fuse))
-        cfg.model.adapters_dir = args.adapters_dir
-        cfg.model.adapter_strategy = args.adapter_strategy
+        #cfg.model.adapters_dir = args.adapters_dir
+        #cfg.model.adapter_strategy = args.adapter_strategy
 
         assert args.learning_strategy == 'ind'
         assert len(args.targets) == 1
@@ -121,7 +146,7 @@ if __name__ == '__main__':
     if args.learning_strategy == 'multi':
         cfg.exp_manager.wandb_logger_kwargs.name = args.wandb
 
-        learn_model(cfg)
+        learn_model(cfg, args)
         #return
     
     for n,target in enumerate(args.targets):
@@ -136,4 +161,4 @@ if __name__ == '__main__':
         #if args.wandb and args.learning_strategy == 'curr':
         #    cfg.exp_manager.wandb_logger_kwargs.name += f"_{target}"
 
-        learn_model(cfg)
+        learn_model(cfg, args)

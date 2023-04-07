@@ -6,6 +6,7 @@ from ..core.losses import CrossEntropyLoss, SmoothedCrossEntropyLoss
 from ..core.data import DataModule
 from .inference import InferenceModel
 import json
+import os
 
 class ClassificationModel(InferenceModel):
     """
@@ -21,6 +22,7 @@ class ClassificationModel(InferenceModel):
         self.trainer = trainer
         self.setup_metrics()
         self.loss = self.setup_loss(self.cfg.optim)
+        self.cfg = cfg
 
 
     def training_step(self, batch, batch_idx):
@@ -131,3 +133,11 @@ class ClassificationModel(InferenceModel):
         Method to be called to start the training.
         """
         self.trainer.fit(self, self.datamodule)
+
+    def load_best_validation_checkpoint(self):
+        ckpt_dir = self.cfg.exp_manager.checkpoint_callback_params.dirpath
+        ckpt_files = os.listdir(ckpt_dir)
+        ckpt_path = os.path.join(ckpt_dir, ckpt_files[0])
+        ckpt_state_dict = torch.load(ckpt_path)['state_dict']
+        self.load_state_dict(ckpt_state_dict)
+        print("Loaded best validation checkpoint from {}!".format(ckpt_path))
